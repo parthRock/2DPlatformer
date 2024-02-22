@@ -10,15 +10,17 @@ public class PlayerController : MonoBehaviour
     public bool iswallDetect;
     public Transform wallCheckRayPoint;
     public LayerMask wallDetectLayer;
+  
     float dashCoolDownTimer;
     Rigidbody2D rb;
     int jumpsRemaining = 2;
     bool facingRight = true;
-
+    SpriteRenderer spriteRenderer;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
     }
 
 
@@ -144,7 +146,7 @@ public class PlayerController : MonoBehaviour
     {
         if (collision.gameObject.tag == "Ground")
         {
-            Debug.Log("PlayerDetect");
+            //Debug.Log("PlayerDetect");
             jumpsRemaining = 2;
         }
     }
@@ -153,7 +155,8 @@ public class PlayerController : MonoBehaviour
     {
         if (collision.gameObject.tag == "Enemy")
         {
-            Destroy(gameObject);
+            TakeDamage(10);
+            StartCoroutine(HurtEffect());
         }
     }
 
@@ -164,4 +167,24 @@ public class PlayerController : MonoBehaviour
     //  transform.Rotate(0f, 180f, 0f);
     }
 
+    IEnumerator HurtEffect()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            spriteRenderer.color = Color.red;
+            yield return new WaitForSeconds(0.1f);
+            spriteRenderer.color = Color.green;
+            yield return new WaitForSeconds(0.1f);
+
+        }
+    }
+
+    public void TakeDamage(int damage)
+    {
+        health -= damage;
+        if (health <= 0)
+        {
+            Destroy(gameObject);
+        }
+    }
 }
