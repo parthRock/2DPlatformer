@@ -4,23 +4,21 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    public float speed, speedUp, jumpSpeed, wallCheckDistance,health;
+    public float speed, speedUp, jumpSpeed, wallCheckDistance, health;
     public float dashDistance = 5f;
     public float dashDuration = 0.5f;
-    public bool iswallDetect;
-    public Transform wallCheckRayPoint;
-    public LayerMask wallDetectLayer;
-  
+    public GameObject winPanel, gameOverPanel,bgMusic;
+    public SpriteRenderer spriteRenderer;
+
     float dashCoolDownTimer;
+    float elapsedTime = 0f;
     Rigidbody2D rb;
     int jumpsRemaining = 2;
     bool facingRight = true;
-    SpriteRenderer spriteRenderer;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
     }
 
 
@@ -28,31 +26,19 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         // Player Movement
-        if (!iswallDetect)
+
+        Vector3 _speed = new Vector3(Input.GetAxis("Horizontal") * speed * Time.deltaTime, 0f, Input.GetAxis("Vertical") * speed * Time.deltaTime) * speedUp;
+        transform.Translate(_speed);
+
+
+        if (_speed.x < 0 && facingRight) // Player Flip
         {
-            Vector3 _speed = new Vector3(Input.GetAxis("Horizontal") * speed * Time.deltaTime, 0f, Input.GetAxis("Vertical") * speed * Time.deltaTime) * speedUp;
-            transform.Translate(_speed);
-
-
-            if (_speed.x < 0 && facingRight) // Player Flip
-            {
-                Flip();
-            }
-            else if (_speed.x > 0 && !facingRight)
-            {
-                Flip();
-            }
+            Flip();
         }
-        else
+        else if (_speed.x > 0 && !facingRight)
         {
-            speed = 0;
+            Flip();
         }
-
-        if (iswallDetect)
-        {
-            speed = 2;
-        }
-
 
 
         if (Input.GetKeyDown(KeyCode.Space) && jumpsRemaining > 0)  // player Jump
@@ -62,11 +48,11 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetKey(KeyCode.LeftShift))  // Player Speed Increase
         {
-            speedUp = 3;
+            speedUp = 2.5f;
         }
         else
         {
-            speedUp = 2;
+            speedUp = 1.5f;
         }
 
         if (Input.GetKeyDown(KeyCode.Z) && dashCoolDownTimer <= 0)
@@ -76,37 +62,19 @@ public class PlayerController : MonoBehaviour
         }
 
 
-        CheckWallCollision();
-
         // playerDashCoolDownTimer
-        if(dashCoolDownTimer > 0)
+        if (dashCoolDownTimer > 0)
         {
             dashCoolDownTimer -= Time.deltaTime;
         }
     }
 
 
-    void CheckWallCollision()
-    {
-        RaycastHit2D _hit = Physics2D.Raycast(wallCheckRayPoint.position, Vector2.right, wallCheckDistance, wallDetectLayer);
-        if (_hit.collider)
-        {
-            iswallDetect = true;
-            rb.AddForce(transform.position * 0.01f, ForceMode2D.Impulse);
-            // Debug.Log("WallDetect");
-        }
-        else
-        {
-            iswallDetect = false;
-        }
-    }
-
 
     IEnumerator Dash()  // Player Dash
     {
-        float elapsedTime = 0f;
         Vector3 startPosition = transform.position;
-        if(facingRight)
+        if (facingRight)
         {
             Vector3 endPosition = startPosition + transform.right * dashDistance;
             while (elapsedTime < dashDuration)
@@ -131,11 +99,6 @@ public class PlayerController : MonoBehaviour
     }
 
 
-    private void OnDrawGizmos()
-    {
-        Gizmos.DrawRay(wallCheckRayPoint.position, Vector2.right * wallCheckDistance);
-    }
-
     void Jump()
     {
         rb.AddForce(new Vector3(0, jumpSpeed, 0), ForceMode2D.Impulse);
@@ -158,13 +121,20 @@ public class PlayerController : MonoBehaviour
             TakeDamage(10);
             StartCoroutine(HurtEffect());
         }
+
+
+        if (collision.gameObject.tag == "WinCollider")
+        {
+            winPanel.SetActive(true);
+            bgMusic.SetActive(false);
+        }
     }
 
     void Flip()
     {
-        facingRight = !facingRight;  
-        transform.localScale = new Vector3(-transform.localScale.x,1,1);      
-    //  transform.Rotate(0f, 180f, 0f);
+        facingRight = !facingRight;
+        transform.localScale = new Vector3(-transform.localScale.x, 1, 1);
+        //  transform.Rotate(0f, 180f, 0f);
     }
 
     IEnumerator HurtEffect()
@@ -173,9 +143,8 @@ public class PlayerController : MonoBehaviour
         {
             spriteRenderer.color = Color.red;
             yield return new WaitForSeconds(0.1f);
-            spriteRenderer.color = Color.green;
+            spriteRenderer.color = Color.white;
             yield return new WaitForSeconds(0.1f);
-
         }
     }
 
@@ -184,7 +153,9 @@ public class PlayerController : MonoBehaviour
         health -= damage;
         if (health <= 0)
         {
-            Destroy(gameObject);
+            Destroy(gameObject,0.2f);
+            gameOverPanel.SetActive(true);
+            bgMusic.SetActive(false);
         }
     }
 }
